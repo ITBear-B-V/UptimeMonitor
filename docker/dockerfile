@@ -16,7 +16,7 @@ WORKDIR /app
 # --more of a convenience when testing locally.
 COPY . .
 # update each dependency in package.json to the latest version
-RUN cd uptime-kuma && npm run setup \
+RUN npm run setup \
     npm install pm2 -g && pm2 install pm2-logrotate
 # If you are building your code for production
 RUN pm2 start server/server.js --name uptime-kuma
