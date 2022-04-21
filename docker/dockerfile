@@ -1,4 +1,4 @@
-FROM louislam/uptime-kuma:base-debian AS build
+FROM maddemonoide/uptimemonitor:base-debian AS build
 WORKDIR /app
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1
@@ -8,7 +8,7 @@ RUN npm ci --production && \
     chmod +x /app/extra/entrypoint.sh
 
 
-FROM louislam/uptime-kuma:base-debian AS release
+FROM maddemonoide/uptimemonitor:base-debian AS release
 WORKDIR /app
 
 # Copy app files from build layer
@@ -26,7 +26,7 @@ RUN npm run mark-as-nightly
 
 
 # Upload the artifact to Github
-FROM louislam/uptime-kuma:base-debian AS upload-artifact
+FROM maddemonoide/uptimemonitor:base-debian AS upload-artifact
 WORKDIR /
 RUN apt update && \
     apt --yes install curl file
