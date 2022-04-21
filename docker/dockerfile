@@ -1,52 +1,25 @@
-FROM louislam/uptime-kuma:base-debian AS build
+FROM node
+LABEL authors="ITBear BV"
+# update dependencies and install curl
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+# Create app directory
 WORKDIR /app
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# where available (npm@5+)
+# COPY package*.json ./ \
+#     ./source ./
 
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1
-
+# This will copy everything from the source path 
+# --more of a convenience when testing locally.
 COPY . .
-RUN npm ci --production && \
-    chmod +x /app/extra/entrypoint.sh
-
-
-FROM louislam/uptime-kuma:base-debian AS release
-WORKDIR /app
-
-# Copy app files from build layer
-COPY --from=build /app /app
-
+# update each dependency in package.json to the latest version
+RUN cd uptime-kuma && npm run setup \
+    npm install pm2 -g && pm2 install pm2-logrotate
+# If you are building your code for production
+RUN pm2 start server/server.js --name uptime-kuma
+# Bundle app source
+COPY . /app
 EXPOSE 3001
-VOLUME ["/app/data"]
-HEALTHCHECK --interval=60s --timeout=30s --start-period=180s --retries=5 CMD node extra/healthcheck.js
-ENTRYPOINT ["/usr/bin/dumb-init", "--", "extra/entrypoint.sh"]
-CMD ["node", "server/server.js"]
-
-
-FROM release AS nightly
-RUN npm run mark-as-nightly
-
-
-# Upload the artifact to Github
-FROM louislam/uptime-kuma:base-debian AS upload-artifact
-WORKDIR /
-RUN apt update && \
-    apt --yes install curl file
-
-COPY --from=build /app /app
-
-ARG VERSION
-ARG GITHUB_TOKEN
-ARG TARGETARCH
-ARG PLATFORM=debian
-ARG FILE=$PLATFORM-$TARGETARCH-$VERSION.tar.gz
-ARG DIST=dist.tar.gz
-
-RUN chmod +x /app/extra/upload-github-release-asset.sh
-
-# Full Build
-# RUN tar -zcvf $FILE app
-# RUN /app/extra/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=louislam repo=uptime-kuma tag=$VERSION filename=$FILE
-
-# Dist only
-RUN cd /app && tar -zcvf $DIST dist
-RUN /app/extra/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=louislam repo=uptime-kuma tag=$VERSION filename=/app/$DIST
-
