@@ -4,11 +4,11 @@
 version: '3.3'
 
 services:
-  uptime-kuma:
-    image: louislam/uptime-kuma:1
-    container_name: uptime-kuma
+  uptime-monitor:
+    image: maddemonoide/uptimemonitor:latest
+    container_name: uptime-monitor
     volumes:
-      - ./uptime-kuma:/app/data
+      - ./uptime-monitor:/app/data
     ports:
       - 3001:3001
     restart: always
